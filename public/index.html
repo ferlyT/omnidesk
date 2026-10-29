@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniDesk - Multi-Channel Customer Service Platform</title>
+
+  <!-- Prevent FOUC (Flash of Unstyled Color Theme) -->
+  <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('omni_theme') || 'system';
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (savedTheme === 'system' && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+
+        const palettes = {
+          indigo: { 50: '238 242 255', 100: '224 231 255', 200: '199 210 254', 300: '165 180 252', 400: '129 140 248', 500: '99 102 241', 600: '79 70 229', 700: '67 56 202', 800: '55 48 163', 900: '49 46 129', 950: '30 27 75' },
+          emerald: { 50: '236 253 245', 100: '209 250 229', 200: '167 243 208', 300: '110 231 183', 400: '52 211 153', 500: '16 185 129', 600: '5 150 105', 700: '4 120 87', 800: '6 95 70', 900: '6 78 59', 950: '2 44 34' },
+          sky: { 50: '240 249 255', 100: '224 242 254', 200: '186 230 253', 300: '125 211 252', 400: '56 189 248', 500: '14 165 233', 600: '2 132 199', 700: '3 105 161', 800: '7 89 133', 900: '12 74 110', 950: '8 47 73' },
+          violet: { 50: '245 243 255', 100: '237 233 254', 200: '221 214 254', 300: '196 181 253', 400: '167 139 250', 500: '139 92 246', 600: '124 58 237', 700: '109 40 217', 800: '91 33 182', 900: '76 29 149', 950: '46 16 101' },
+          amber: { 50: '255 251 235', 100: '254 243 199', 200: '253 230 138', 300: '252 211 77', 400: '251 191 36', 500: '245 158 11', 600: '217 119 6', 700: '180 83 9', 800: '146 64 14', 900: '120 53 15', 950: '69 26 3' },
+          slate: { 50: '248 250 252', 100: '241 245 249', 200: '226 232 240', 300: '203 213 225', 400: '148 163 184', 500: '100 116 139', 600: '71 85 105', 700: '51 65 85', 800: '30 41 59', 900: '15 23 42', 950: '2 6 23' }
+        };
+
+        const savedPalette = localStorage.getItem('omni_color_theme') || 'indigo';
+        const p = palettes[savedPalette] || palettes.indigo;
+        let rootCss = ':root {';
+        for (const [k, v] of Object.entries(p)) {
+          rootCss += `--color-indigo-${k}: ${v};`;
+        }
+        rootCss += '}';
+        const style = document.createElement('style');
+        style.id = 'omniThemeVars';
+        style.textContent = rootCss;
+        document.head.appendChild(style);
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Suppress Tailwind Play CDN production warning in console -->
+  <script>
+    const _origWarn = console.warn;
+    console.warn = (...args) => {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+      _origWarn.apply(console, args);
+    };
+  </script>
+
+  <!-- Tailwind CSS CDN with dark mode: 'class' -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Socket.io Client -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            indigo: {
+              50: 'rgb(var(--color-indigo-50, 238 242 255) / <alpha-value>)',
+              100: 'rgb(var(--color-indigo-100, 224 231 255) / <alpha-value>)',
+              200: 'rgb(var(--color-indigo-200, 199 210 254) / <alpha-value>)',
+              300: 'rgb(var(--color-indigo-300, 165 180 252) / <alpha-value>)',
+              400: 'rgb(var(--color-indigo-400, 129 140 248) / <alpha-value>)',
+              500: 'rgb(var(--color-indigo-500, 99 102 241) / <alpha-value>)',
+              600: 'rgb(var(--color-indigo-600, 79 70 229) / <alpha-value>)',
+              700: 'rgb(var(--color-indigo-700, 67 56 202) / <alpha-value>)',
+              800: 'rgb(var(--color-indigo-800, 55 48 163) / <alpha-value>)',
+              900: 'rgb(var(--color-indigo-900, 49 46 129) / <alpha-value>)',
+              950: 'rgb(var(--color-indigo-950, 30 27 75) / <alpha-value>)'
+            },
+            accent: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              200: '#fde68a',
+              400: '#fbbf24',
+              500: '#f59e0b', // Highlight Amber-Orange
+              600: '#d97706',
+              700: '#b45309'
+            },
+            telegram: '#229ED9',
+            whatsapp: '#25D366'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Ultra sleek modern scrollbars */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased flex overflow-hidden transition-colors duration-200">
+
+  <!-- ============================================== -->
+  <!-- 1. LOGIN SCREEN OVERLAY                         -->
+  <!-- ============================================== -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white/95 dark:bg-slate-900/95 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 max-w-md w-full overflow-hidden p-6 sm:p-8 animate-fade-in backdrop-blur-sm">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white shadow-lg shadow-indigo-500/25 mb-3">
+          <i data-lucide="messages-square" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">OmniDesk</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Platform Layanan Pelanggan Multi-Saluran</p>
+      </div>
+
+      <!-- Quick Role Selection Buttons -->
+      <div class="mb-5">
+        <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Login Cepat Satu Klik:</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="quickLogin('agent_budi', 'Agent123!')" class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 text-left transition group">
+            <span class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition">CS</span>
+            <div>
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-200">CS Budi</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">Agent Staf</p>
+            </div>
+          </button>
+          <button type="button" onclick="quickLogin('agent_siti', 'Agent123!')" class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 text-left transition group">
+            <span class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition">CS</span>
+            <div>
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-200">CS Siti</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">Agent Staf</p>
+            </div>
+          </button>
+          <button type="button" onclick="quickLogin('spv_dimas', 'Spv123!')" class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 text-left transition group">
+            <span class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition">SPV</span>
+            <div>
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-200">SPV Dimas</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">Supervisor</p>
+            </div>
+          </button>
+          <button type="button" onclick="quickLogin('admin', 'Admin123!')" class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition group">
+            <span class="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition">ADM</span>
+            <div>
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Admin</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">Administrator</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="relative flex py-2 items-center">
+        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+        <span class="flex-shrink mx-3 text-slate-400 dark:text-slate-500 text-[11px] font-medium">atau ketik manual</span>
+        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+      </div>
+
+      <form id="loginForm" onsubmit="handleManualLogin(event)" class="space-y-3 mt-2">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Username</label>
+          <input type="text" id="loginUsername" required class="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. agent_budi">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Password</label>
+          <input type="password" id="loginPassword" required class="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="••••••••">
+        </div>
+        <div id="loginError" class="text-xs text-rose-600 dark:text-rose-400 font-semibold hidden"></div>
+        <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-600/20 transition text-xs flex items-center justify-center gap-2">
+          <span>Masuk ke OmniDesk</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- 2. LEFT DARK VERTICAL ICON RAIL (SLACK/LINEAR) -->
+  <!-- ============================================== -->
+  <aside class="w-16 bg-slate-950 border-r border-slate-800/80 flex flex-col items-center py-4 justify-between z-30 select-none flex-shrink-0">
+    
+    <!-- Top Brand & App Navigation Icons -->
+    <div class="flex flex-col items-center gap-6 w-full">
+      <!-- App Brand Logo -->
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 cursor-pointer hover:scale-105 transition" title="OmniDesk Multi-Channel Platform">
+        <i data-lucide="messages-square" class="w-5 h-5"></i>
+      </div>
+
+      <!-- Navigation Rail Buttons -->
+      <nav class="flex flex-col items-center gap-2 w-full px-2">
+        <!-- 1. Tiket & Percakapan -->
+        <button onclick="switchView('agent')" id="navAgent" class="relative group w-11 h-11 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center transition" title="Tiket & Percakapan">
+          <i data-lucide="inbox" class="w-5 h-5"></i>
+          <!-- Live badge count (Amber Accent) -->
+          <span id="badgePoolCount" class="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 shadow-xs">0</span>
+        </button>
+
+        <!-- 2. Supervisor Panel -->
+        <button onclick="switchView('supervisor')" id="navSupervisor" class="relative group w-11 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 flex items-center justify-center transition" title="Supervisor Panel (Monitoring & Takeover)">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </button>
+
+        <!-- 3. Channel & Prefix Config -->
+        <button onclick="switchView('channels')" id="navChannels" class="relative group w-11 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 flex items-center justify-center transition" title="Koneksi WA & Telegram & Dynamic Prefix">
+          <i data-lucide="radio" class="w-5 h-5"></i>
+        </button>
+
+        <!-- 4. User Management & Avatars (Admin Only) -->
+        <button onclick="switchView('users')" id="navUsers" class="relative group w-11 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 flex items-center justify-center transition hidden" title="Manajemen Pengguna & Avatar (Admin)">
+          <i data-lucide="users" class="w-5 h-5"></i>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Actions: Theme Toggle, Simulator & User Profile -->
+    <div class="flex flex-col items-center gap-2.5 w-full px-2">
+      <!-- Theme Switcher Button -->
+      <button onclick="openThemeModal()" id="btnTheme" class="relative group w-10 h-10 rounded-xl bg-slate-900 hover:bg-indigo-600/30 text-slate-300 hover:text-indigo-300 flex items-center justify-center transition shadow-xs border border-slate-800" title="Pengaturan Tema & Tampilan">
+        <i data-lucide="palette" class="w-4 h-4"></i>
+        <span id="themeDotIndicator" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 shadow-2xs"></span>
+      </button>
+
+      <!-- Chat Simulator Modal Trigger -->
+      <button onclick="openSimulatorModal()" class="w-10 h-10 rounded-xl bg-slate-900 hover:bg-indigo-600 text-slate-300 hover:text-white flex items-center justify-center transition shadow-xs border border-slate-800" title="Simulasi Chat Pelanggan Luar">
+        <i data-lucide="smartphone" class="w-4 h-4"></i>
+      </button>
+
+      <div class="w-8 h-px bg-slate-800 my-1"></div>
+
+      <!-- User Avatar Profile & Logout -->
+      <div class="relative group cursor-pointer flex flex-col items-center">
+        <div id="userAvatar" onclick="logout()" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-800 text-white font-bold text-xs flex items-center justify-center shadow-xs hover:ring-2 hover:ring-rose-500 transition overflow-hidden" title="Klik untuk Logout">
+          CS
+        </div>
+        <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950"></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================== -->
+  <!-- 3. MAIN EDGE-TO-EDGE WORKSPACE (FULL WIDTH)   -->
+  <!-- ============================================== -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+    
+    <!-- Top Slim Breadcrumb / Status Header -->
+    <header class="h-12 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between flex-shrink-0 z-20">
+      <div class="flex items-center gap-3">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span>OmniDesk</span>
+          <span class="text-slate-300 dark:text-slate-700">•</span>
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400" id="topNavBreadcrumb">Tiket & Percakapan</span>
+        </h2>
+
+        <!-- Dynamic Workspace Switcher Dropdown -->
+        <div class="relative" id="workspaceSwitcherContainer">
+          <button type="button" onclick="toggleWorkspaceDropdown()" id="btnWorkspaceDropdown" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition shadow-2xs cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400" id="activeWorkspaceDot"></span>
+            <span id="activeWorkspaceLabel">Semua Workspace</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-indigo-500"></i>
+          </button>
+
+          <div id="workspaceDropdownMenu" class="hidden absolute left-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 z-50">
+            <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 px-2.5 py-1 uppercase tracking-wider">Filter Departemen / Workspace</div>
+            <div id="workspaceDropdownList" class="space-y-1 max-h-60 overflow-y-auto">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+          Sistem Online
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <!-- Active User Badge -->
+        <div class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3 py-1 rounded-xl">
+          <span id="userDisplayName" class="font-bold text-slate-900 dark:text-white">Nama Agen</span>
+          <span class="text-slate-300 dark:text-slate-600">|</span>
+          <span id="userRoleBadge" class="text-[11px] text-slate-500 dark:text-slate-400">Role</span>
+        </div>
+
+        <!-- Toggle Right Sidebar Button (Only visible on agent workspace) -->
+        <button onclick="toggleRightSidebar()" id="btnToggleSide" class="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-2xs flex items-center gap-1.5 text-xs font-medium" title="Sembunyikan/Tampilkan Panel Profil Pelanggan">
+          <i data-lucide="user-check" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Panel Profil</span>
+        </button>
+
+        <!-- Logout button -->
+        <button onclick="logout()" title="Logout" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ============================================== -->
+    <!-- VIEW 1: AGENT WORKSPACE (3-COLUMN FULL WIDTH)  -->
+    <!-- ============================================== -->
+    <main id="viewAgent" class="flex-1 flex overflow-hidden">
+      
+      <!-- COLUMN 1: TICKET QUEUE LIST (340px) -->
+      <section class="w-80 lg:w-96 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full flex-shrink-0 z-10 transition-colors duration-200">
+        
+        <!-- Search & Filter Bar -->
+        <div class="p-3 border-b border-slate-100 dark:border-slate-800 space-y-2">
+          <div class="relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3"></i>
+            <input type="text" id="ticketSearchInput" oninput="filterTicketList(this.value)" placeholder="Cari nama, HP, atau tiket..." class="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <!-- Queue Switcher Tabs -->
+          <div class="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-semibold">
+            <button onclick="switchTicketTab('pool')" id="tabPool" class="py-1.5 rounded-lg bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 shadow-2xs font-bold flex items-center justify-center gap-1.5 transition">
+              <span>Pool Antrean</span>
+              <span id="tabPoolBadge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-slate-950 font-bold">0</span>
+            </button>
+            <button onclick="switchTicketTab('my')" id="tabMy" class="py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5 transition">
+              <span>Tiket Saya</span>
+              <span id="tabMyBadge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Ticket Cards Container -->
+        <div id="ticketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5">
+          <!-- Rendered dynamically via JS -->
+        </div>
+      </section>
+
+      <!-- COLUMN 2: ACTIVE CHAT CONVERSATION AREA (FLUID FULL WIDTH) -->
+      <section class="flex-1 flex flex-col h-full bg-slate-50/50 dark:bg-slate-950/50 relative overflow-hidden transition-colors duration-200">
+        
+        <!-- Active Chat Header -->
+        <div id="chatHeader" class="h-16 px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+          <div class="flex items-center gap-3">
+            <div id="chatChannelIcon" class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold">
+              <i data-lucide="message-circle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 id="chatCustomerName" class="font-bold text-sm text-slate-900 dark:text-white">Pilih Tiket untuk Memulai</h3>
+                <span id="chatTicketNumber" class="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono rounded-lg font-semibold"></span>
+                <span id="chatContactTypeBadge" class="hidden text-[10px] px-2 py-0.5 rounded-lg font-bold"></span>
+              </div>
+              <p id="chatCustomerMeta" class="text-xs text-slate-500 dark:text-slate-400">Klik salah satu tiket dari antrean di sebelah kiri</p>
+            </div>
+          </div>
+
+          <!-- Chat Header Actions -->
+          <div id="chatActions" class="flex items-center gap-2 hidden">
+            <button onclick="handleResolveTicket()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+              <span>Selesaikan Tiket</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Conversation Messages Container -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-4">
+          <div class="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+            <div class="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center mb-3 text-slate-300 dark:text-slate-600">
+              <i data-lucide="messages-square" class="w-8 h-8 stroke-[1.2]"></i>
+            </div>
+            <p class="text-xs font-medium">Belum ada percakapan tiket yang dipilih</p>
+          </div>
+        </div>
+
+        <!-- Dynamic Agent Prefix Preview Indicator -->
+        <div id="prefixPreviewBar" class="px-6 py-2 bg-indigo-50/80 dark:bg-indigo-950/40 border-t border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs text-indigo-800 dark:text-indigo-300 hidden">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+            <span>Injeksi Identitas Otomatis: <b id="prefixPreviewText" class="font-mono bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">*[CS Budi]*:</b></span>
+          </div>
+          <span class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">Pelanggan melihat identitas resmi Anda</span>
+        </div>
+
+        <!-- Chat Input Bar & Mode Toggle -->
+        <div id="chatInputArea" class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex-shrink-0 hidden">
+          <!-- Mode Toggle: Customer vs Whisper Note -->
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="setInputMode('CUSTOMER')" id="modeBtnCustomer" class="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 flex items-center gap-1.5 transition">
+                <i data-lucide="send" class="w-3 h-3"></i>
+                <span>Balas ke Pelanggan</span>
+              </button>
+              <button type="button" onclick="setInputMode('WHISPER')" id="modeBtnWhisper" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 hover:text-amber-800 dark:hover:text-amber-300 flex items-center gap-1.5 transition">
+                <i data-lucide="lock" class="w-3 h-3"></i>
+                <span>Catatan Internal (Whisper)</span>
+              </button>
+            </div>
+            <span id="modeDescription" class="text-[11px] text-slate-400 dark:text-slate-500">Pesan akan dikirim langsung ke WhatsApp/Telegram pelanggan</span>
+          </div>
+
+          <!-- Selected Attachment Preview Chip -->
+          <div id="attachmentPreviewBar" class="hidden mb-2.5 p-2.5 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between animate-fade-in">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+              <div id="attachPreviewIcon" class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 font-bold text-xs">
+                <i data-lucide="paperclip" class="w-4 h-4"></i>
+              </div>
+              <div class="overflow-hidden text-xs">
+                <p id="attachPreviewName" class="font-bold text-slate-800 dark:text-slate-200 truncate">nama_file.pdf</p>
+                <p id="attachPreviewSize" class="text-[10px] text-slate-500 dark:text-slate-400">0 KB</p>
+              </div>
+            </div>
+            <button type="button" onclick="clearSelectedMedia()" class="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition" title="Batalkan lampiran">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Input field form -->
+          <form onsubmit="handleSendMessage(event)" class="flex items-center gap-2">
+            <!-- Hidden file input for images & documents (max 15MB) -->
+            <input type="file" id="mediaFileInput" onchange="handleMediaSelect(event)" class="hidden" accept="image/jpeg,image/png,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+
+            <!-- Paperclip Button -->
+            <button type="button" id="btnAttachMedia" onclick="document.getElementById('mediaFileInput').click()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition flex items-center justify-center flex-shrink-0" title="Lampirkan Gambar atau Dokumen (Maks 15 MB)">
+              <i data-lucide="paperclip" class="w-4 h-4"></i>
+            </button>
+
+            <input type="text" id="chatInputText" class="flex-1 px-4 py-2.5 text-xs sm:text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ketik balasan Anda atau keterangan lampiran..." autocomplete="off">
+            <button type="submit" id="btnSendMsg" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-indigo-600/20 transition flex-shrink-0">
+              <span>Kirim</span>
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </form>
+        </div>
+
+      </section>
+
+      <!-- COLUMN 3: COLLAPSIBLE RIGHT PANEL (CUSTOMER CRM & PROFILE) (340px) -->
+      <aside id="billingSidebar" class="w-80 lg:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col h-full flex-shrink-0 overflow-y-auto p-5 space-y-4 transition-colors duration-200">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+            <i data-lucide="user-check" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+            <span>Profil & CRM Pelanggan</span>
+          </h4>
+          <button onclick="toggleRightSidebar()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Tutup Panel">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Customer Identity Card (VIEW MODE) -->
+        <div id="customerProfileView" class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Identitas Pelanggan</span>
+            <button type="button" onclick="enableCustomerEditMode()" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 transition flex items-center gap-1 shadow-2xs">
+              <i data-lucide="edit-3" class="w-3 h-3"></i>
+              <span>Edit Data</span>
+            </button>
+          </div>
+
+          <div class="flex items-start gap-3 pt-1">
+            <div id="sideCustomerAvatar" class="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-2xs">
+              CS
+            </div>
+            <div class="flex-1 overflow-hidden">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h3 id="sideCustomerName" class="font-bold text-sm text-slate-900 dark:text-white leading-tight">-</h3>
+                <span id="sideContactTypeBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600">PELANGGAN</span>
+                <span id="sideCustomerCategoryBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">REGULER</span>
+              </div>
+              <p id="sideCompany" class="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">-</p>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+            <div id="sideDivisionRow" class="flex justify-between items-center hidden">
+              <span class="text-slate-400 dark:text-slate-500">Divisi / Unit</span>
+              <b id="sideDivision" class="text-indigo-700 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-800">-</b>
+            </div>
+            <div id="sideEmployeeIdRow" class="flex justify-between items-center hidden">
+              <span class="text-slate-400 dark:text-slate-500">NIP / ID Staf</span>
+              <b id="sideEmployeeId" class="font-mono text-slate-800 dark:text-slate-200 font-semibold">-</b>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 dark:text-slate-500">Channel</span>
+              <b id="sideChannel" class="text-indigo-600 dark:text-indigo-400 font-semibold">-</b>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 dark:text-slate-500">Nomor / ID</span>
+              <b id="sideContact" class="font-mono text-slate-800 dark:text-slate-200 font-semibold">-</b>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 dark:text-slate-500">Email</span>
+              <b id="sideEmail" class="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[180px]">-</b>
+            </div>
+            <div class="pt-1">
+              <span class="text-slate-400 dark:text-slate-500 block mb-0.5">Alamat</span>
+              <p id="sideAddress" class="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] leading-relaxed break-words whitespace-pre-wrap">-</p>
+            </div>
+            <div class="pt-1">
+              <span class="text-slate-400 dark:text-slate-500 block mb-0.5">Catatan CRM</span>
+              <p id="sideNotes" class="text-slate-700 dark:text-slate-300 bg-amber-50/60 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200/70 dark:border-amber-900/50 text-[11px] leading-relaxed break-words italic whitespace-pre-wrap">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Identity Edit Form (EDIT MODE - HIDDEN BY DEFAULT) -->
+        <div id="customerProfileEdit" class="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-indigo-300 dark:border-indigo-600 shadow-sm space-y-3 hidden">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <i data-lucide="edit-2" class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
+              Edit Profil Kontak
+            </span>
+            <button type="button" onclick="cancelCustomerEditMode()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <form onsubmit="handleSaveCustomerProfile(event)" class="space-y-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Nama Lengkap</label>
+              <input type="text" id="editCustomerName" required class="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Tipe Kontak</label>
+                <select id="editContactType" onchange="toggleContactTypeFields(this.value)" class="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                  <option value="CUSTOMER">Pelanggan Eksternal</option>
+                  <option value="INTERNAL">Internal / Divisi Lain</option>
+                  <option value="VENDOR">Mitra / Vendor</option>
+                </select>
+              </div>
+              <div id="fieldCustomerCategoryWrapper">
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Kategori Pelanggan</label>
+                <select id="editCustomerCategory" class="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                  <option value="REGULER">Reguler</option>
+                  <option value="VIP">VIP</option>
+                  <option value="BISNIS">Bisnis</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="fieldDivisionWrapper" class="grid grid-cols-2 gap-2 hidden">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Nama Divisi / Bagian</label>
+                <input type="text" id="editCustomerDivision" placeholder="Contoh: IT Support, Finance" class="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">NIP / ID Karyawan</label>
+                <input type="text" id="editCustomerEmployeeId" placeholder="Opsional" class="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Perusahaan / Instansi</label>
+              <input type="text" id="editCustomerCompany" placeholder="Opsional" class="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Email</label>
+              <input type="email" id="editCustomerEmail" placeholder="nama@email.com" class="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Alamat</label>
+              <textarea id="editCustomerAddress" rows="2" placeholder="Alamat domisili atau kantor" class="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Catatan CRM</label>
+              <textarea id="editCustomerNotes" rows="2" placeholder="Preferensi atau catatan khusus pelanggan" class="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+              <button type="submit" id="btnSaveCustomer" class="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span>Simpan</span>
+              </button>
+              <button type="button" onclick="cancelCustomerEditMode()" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold text-xs transition">
+                Batal
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Current Invoice Card (TEMPORARILY HIDDEN / OFF AS REQUESTED) -->
+        <div id="billingInvoiceCard" class="hidden p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-md space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300 font-medium">Tagihan Berjalan</span>
+            <span id="billingStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">MEMUAT</span>
+          </div>
+
+          <div>
+            <span class="text-xs text-slate-400">Total Tagihan</span>
+            <p id="billingAmount" class="text-2xl font-black text-white tracking-tight mt-0.5">Rp 0</p>
+            <p id="billingDueDate" class="text-[11px] text-slate-400 mt-1">Jatuh Tempo: <b>-</b></p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-700/60 text-xs text-slate-300 space-y-1">
+            <p class="flex justify-between"><span>Paket Layanan:</span> <b id="billingPlan" class="text-white">-</b></p>
+            <p class="flex justify-between"><span>ID Pelanggan:</span> <b id="billingAccId" class="font-mono text-slate-200">-</b></p>
+          </div>
+
+          <!-- Quick Copy Action Button -->
+          <button type="button" onclick="copyBillingSummaryToChat()" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center gap-2 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Salin Rincian ke Input Chat</span>
+          </button>
+        </div>
+
+      </aside>
+
+    </main>
+
+    <!-- ============================================== -->
+    <!-- VIEW 2: SUPERVISOR PANEL (EDGE-TO-EDGE)        -->
+    <!-- ============================================== -->
+    <main id="viewSupervisor" class="flex-1 overflow-y-auto p-6 space-y-6 hidden transition-colors duration-200">
+      
+      <!-- SPV KPI METRICS ROW -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Antrean Unassigned</p>
+            <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <i data-lucide="inbox" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <p id="spvUnassignedCount" class="text-3xl font-black text-slate-900 dark:text-white mt-2">0</p>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Menunggu diklaim oleh agen CS</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Tiket Aktif</p>
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <i data-lucide="message-square" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <p id="spvActiveCount" class="text-3xl font-black text-slate-900 dark:text-white mt-2">0</p>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Sedang ditangani staf CS</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Selesai Hari Ini</p>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <p id="spvResolvedCount" class="text-3xl font-black text-slate-900 dark:text-white mt-2">0</p>
+          <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Resolved tickets</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Pelanggaran SLA (>5 Min)</p>
+            <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <p id="spvSlaCount" class="text-3xl font-black text-rose-600 dark:text-rose-400 mt-2">0</p>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Belum direspons tepat waktu</p>
+        </div>
+
+      </div>
+
+      <!-- SPV WORKSPACE 2-COLUMN GRID -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- ALL ACTIVE TICKETS (LIVE MONITORING & TAKEOVER) (7 cols) -->
+        <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Live Eavesdropping & Intervensi</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Pantau tiket seluruh agen secara real-time</p>
+            </div>
+            <button onclick="loadSupervisorData()" class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition" title="Refresh Data">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] uppercase tracking-wider bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th class="py-2.5 px-3">No Tiket</th>
+                  <th class="py-2.5 px-3">Pelanggan</th>
+                  <th class="py-2.5 px-3">Agen CS</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3 text-right">Aksi SPV</th>
+                </tr>
+              </thead>
+              <tbody id="spvTicketsTable" class="divide-y divide-slate-100 dark:divide-slate-800">
+                <!-- Rendered dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- AGENT WORKLOAD & AUDIT TRAIL (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          
+          <!-- Agent Workloads -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs p-5">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-3">Beban Kerja Staf CS</h3>
+            <div id="spvAgentWorkloads" class="space-y-2.5">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Audit Trail Logs -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs p-5">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-3">Audit Trail Aktivitas</h3>
+            <div id="spvAuditLogs" class="space-y-2.5 max-h-72 overflow-y-auto">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- ============================================== -->
+    <!-- VIEW 3: CHANNELS & DYNAMIC PREFIX CONFIG       -->
+    <!-- ============================================== -->
+    <main id="viewChannels" class="flex-1 overflow-y-auto p-6 space-y-6 hidden transition-colors duration-200">
+      
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs p-6">
+        <h2 class="text-base font-bold text-slate-900 dark:text-white">Koneksi Saluran Komunikasi & Prefix Nama Agen</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Konfigurasi nomor WhatsApp & akun Telegram untuk digunakan bersama seluruh staf agen.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- WHATSAPP CARD -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <i data-lucide="phone-call" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm">Saluran WhatsApp CS</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Koneksi Multi-Perangkat</p>
+              </div>
+            </div>
+            <span id="waStatusBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">DISCONNECTED</span>
+          </div>
+
+          <!-- QR Code Display Holder -->
+          <div id="waQrContainer" class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2 font-medium">Scan QR Code dengan WhatsApp di Ponsel Anda:</p>
+            <div id="waQrImageHolder" class="w-52 h-52 mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-400 text-xs shadow-2xs">
+              QR Belum Siap
+            </div>
+            <button onclick="reconnectWhatsApp()" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition shadow-xs">
+              Muat Ulang / Inisialisasi QR
+            </button>
+          </div>
+
+          <!-- WA Dynamic Prefix Configuration -->
+          <div class="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Pengaturan Prefix Nama Agen (WhatsApp)</h4>
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Prefix Template</label>
+              <input type="text" id="waPrefixTemplate" value="*[{display_alias}]*:" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-mono">
+              <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Variabel: {display_alias}, {username}, {role}, {ticket_number}</p>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Mode Injeksi</label>
+              <select id="waPrefixMode" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                <option value="ALWAYS">ALWAYS (Setiap balon chat keluar)</option>
+                <option value="ONCE_PER_HANDOFF">ONCE_PER_HANDOFF (Saat pergantian agen)</option>
+                <option value="FIRST_RESPONSE_ONLY">FIRST_RESPONSE_ONLY (Hanya salam pertama)</option>
+              </select>
+            </div>
+            <button onclick="savePrefixConfig(1, 'wa')" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition">
+              Simpan Konfigurasi WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <!-- TELEGRAM GATEWAY CARD -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
+                <i data-lucide="send" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm">Akun Telegram CS</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Koneksi Akun Langsung</p>
+              </div>
+            </div>
+            <span id="tgStatusBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">DISCONNECTED</span>
+          </div>
+
+          <!-- Telegram Login & OTP & 2FA Form -->
+          <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+            <p class="text-xs text-slate-700 dark:text-slate-200 font-bold">Login Akun Telegram CS:</p>
+            
+            <div class="space-y-1">
+              <label class="block text-[11px] text-slate-500 dark:text-slate-400">1. Nomor Telepon Telegram</label>
+              <div class="flex gap-2">
+                <input type="text" id="tgPhoneInput" placeholder="+628123456789" class="flex-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                <button onclick="sendTelegramCode()" class="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl transition">
+                  Kirim OTP
+                </button>
+              </div>
+            </div>
+
+            <div id="tgOtpArea" class="space-y-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+              <div class="space-y-1">
+                <label class="block text-[11px] text-slate-500 dark:text-slate-400">2. Kode OTP Telegram</label>
+                <input type="text" id="tgOtpInput" placeholder="Masukkan 5 digit kode OTP" class="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+              </div>
+
+              <div class="space-y-1">
+                <label class="block text-[11px] text-slate-500 dark:text-slate-400">3. Password 2FA (Diperlukan jika Two-Step Verification Aktif)</label>
+                <input type="password" id="tg2faInput" placeholder="Password Cloud 2FA Telegram Anda" class="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+              </div>
+
+              <button onclick="verifyTelegramCode()" class="w-full mt-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Verifikasi & Hubungkan Telegram</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Telegram Dynamic Prefix Configuration -->
+          <div class="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Pengaturan Prefix Nama Agen (Telegram)</h4>
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Prefix Template</label>
+              <input type="text" id="tgPrefixTemplate" value="`[{display_alias}]`:" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-mono">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Mode Injeksi</label>
+              <select id="tgPrefixMode" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                <option value="ALWAYS">ALWAYS (Setiap balon chat keluar)</option>
+                <option value="ONCE_PER_HANDOFF">ONCE_PER_HANDOFF (Saat pergantian agen)</option>
+                <option value="FIRST_RESPONSE_ONLY">FIRST_RESPONSE_ONLY (Hanya salam pertama)</option>
+              </select>
+            </div>
+            <button onclick="savePrefixConfig(2, 'tg')" class="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold transition">
+              Simpan Konfigurasi Telegram
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- ============================================== -->
+    <!-- VIEW 4: UNIFIED ADMIN CENTER (SUB-TABS)        -->
+    <!-- ============================================== -->
+    <main id="viewUsers" class="flex-1 overflow-y-auto p-6 space-y-5 hidden transition-colors duration-200">
+      
+      <!-- Sub-Tab Navigation Header -->
+      <div class="flex flex-wrap items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+        <button onclick="switchAdminTab('users')" id="btnTabAdminUsers" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow-xs cursor-pointer">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>1. Staf & Pengguna</span>
+        </button>
+        <button onclick="switchAdminTab('roles')" id="btnTabAdminRoles" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>2. Role & Hak Akses (Granular)</span>
+        </button>
+        <button onclick="switchAdminTab('workspaces')" id="btnTabAdminWorkspaces" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">
+          <i data-lucide="briefcase" class="w-4 h-4"></i>
+          <span>3. Manajemen Workspace</span>
+        </button>
+        <button onclick="switchAdminTab('channels')" id="btnTabAdminChannels" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">
+          <i data-lucide="phone-call" class="w-4 h-4"></i>
+          <span>4. Saluran & Multi-WA</span>
+        </button>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SUB-TAB 1: USERS & STAF CS                     -->
+      <!-- ============================================== -->
+      <div id="sectionAdminUsers" class="space-y-6">
+        <!-- Top Action & Info Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="users-2" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+              <span>Manajemen Pengguna & Staf CS</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kelola akun staf customer service, penugasan role dinamis, aktivasi akun, dan foto avatar.</p>
+          </div>
+
+          <button onclick="openAddUserModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Tambah Pengguna Baru</span>
+          </button>
+        </div>
+
+        <!-- Quick Metrics Counters -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Pengguna</p>
+            <p id="metricTotalUsers" class="text-2xl font-black text-slate-900 dark:text-white mt-1">0</p>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Terdaftar di sistem</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <p class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Akun Aktif</p>
+            <p id="metricActiveUsers" class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">0</p>
+            <p class="text-[11px] text-emerald-500 dark:text-emerald-500/80 mt-0.5">Dapat login & bertugas</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <p class="text-[11px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-wider">Akun Nonaktif</p>
+            <p id="metricInactiveUsers" class="text-2xl font-black text-rose-500 dark:text-rose-400 mt-1">0</p>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Akses masuk diblokir</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <p class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Administrator</p>
+            <p id="metricAdminUsers" class="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">0</p>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Akses penuh sistem</p>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="relative w-full sm:w-80">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input type="text" id="userSearchInput" oninput="renderAdminUsersTable()" placeholder="Cari nama, alias, username, email..." class="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <select id="userRoleFilter" onchange="renderAdminUsersTable()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="ALL">Semua Peran (Role)</option>
+              <!-- Populated dynamically -->
+            </select>
+
+            <select id="userStatusFilter" onchange="renderAdminUsersTable()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+              <option value="ALL">Semua Status</option>
+              <option value="ACTIVE">Aktif Saja</option>
+              <option value="INACTIVE">Nonaktif Saja</option>
+            </select>
+
+            <button onclick="loadAdminUsers()" class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer" title="Segarkan Data">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- User List Table -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] uppercase tracking-wider bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th class="py-3.5 px-4 font-bold">Pengguna & Avatar</th>
+                  <th class="py-3.5 px-4 font-bold">Email</th>
+                  <th class="py-3.5 px-4 font-bold">Peran (Role)</th>
+                  <th class="py-3.5 px-4 font-bold">Status Aktivasi</th>
+                  <th class="py-3.5 px-4 font-bold text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-slate-400 dark:text-slate-500">Memuat data pengguna...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SUB-TAB 2: ROLES & GRANULAR PERMISSIONS        -->
+      <!-- ============================================== -->
+      <div id="sectionAdminRoles" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+              <span>Manajemen Role & Hak Akses Granular</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Konfigurasi peran dinamis dengan checklist izin operasional tiket, supervisi, dan administrasi.</p>
+          </div>
+
+          <button onclick="openAddRoleModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Tambah Role Baru</span>
+          </button>
+        </div>
+
+        <div id="rolesListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SUB-TAB 3: MULTI-WORKSPACE / DEPARTEMEN        -->
+      <!-- ============================================== -->
+      <div id="sectionAdminWorkspaces" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="briefcase" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+              <span>Manajemen Workspace / Departemen CS</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pisahkan antrean tiket per unit (Billing, Technical Support, Pengaduan) dengan penugasan agen fleksibel.</p>
+          </div>
+
+          <button onclick="openAddWorkspaceModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Tambah Workspace Baru</span>
+          </button>
+        </div>
+
+        <div id="workspacesListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SUB-TAB 4: CHANNELS & MULTI-WHATSAPP GATEWAY   -->
+      <!-- ============================================== -->
+      <div id="sectionAdminChannels" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="phone-call" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+              <span>Koneksi Saluran & Multi-WhatsApp</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kelola nomor WhatsApp & akun Telegram resmi, lalu petakan langsung ke masing-masing Workspace tujuan.</p>
+          </div>
+
+          <button onclick="openNewWaModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Hubungkan Nomor WA Baru</span>
+          </button>
+        </div>
+
+        <div id="adminChannelsListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ============================================== -->
+  <!-- USER ADD / EDIT & AVATAR MODAL (ADMIN ONLY)   -->
+  <!-- ============================================== -->
+  <div id="userModal" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 id="userModalTitle" class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-indigo-600 dark:text-indigo-400" id="userModalHeaderIcon"></i>
+          <span>Tambah Pengguna Baru</span>
+        </h3>
+        <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="userForm" onsubmit="handleSaveUser(event)" class="space-y-4">
+        <input type="hidden" id="userFormId" value="">
+
+        <!-- Avatar preview & upload row -->
+        <div class="flex items-center gap-4 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div class="relative group">
+            <div id="userModalAvatarPreview" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-bold text-xl flex items-center justify-center overflow-hidden shadow-xs border-2 border-white dark:border-slate-800">
+              CS
+            </div>
+            <button type="button" onclick="document.getElementById('userModalFileInput').click()" class="absolute inset-0 bg-black/50 text-white rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-xs font-semibold" title="Ganti Avatar">
+              <i data-lucide="camera" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <div class="flex-1 space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Avatar Profil</label>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Unggah foto avatar staf CS (PNG/JPG maks 15MB) atau masukkan URL foto.</p>
+            <div class="flex items-center gap-2 pt-1">
+              <input type="file" id="userModalFileInput" accept="image/*" class="hidden" onchange="handleModalAvatarFileSelected(event)">
+              <button type="button" onclick="document.getElementById('userModalFileInput').click()" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                <span>Pilih Foto</span>
+              </button>
+              <button type="button" onclick="clearModalAvatar()" class="px-2.5 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl text-xs font-medium transition" title="Hapus Avatar">
+                Hapus
+              </button>
+            </div>
+            <input type="text" id="userFormAvatarUrl" placeholder="https://... atau path avatar" class="w-full px-3 py-1.5 text-[11px] font-mono rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 mt-1" oninput="previewAvatarUrl(this.value)">
+          </div>
+        </div>
+
+        <!-- Identity: Display Alias & Username -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Panggilan / Alias <span class="text-rose-500">*</span></label>
+            <input type="text" id="userFormAlias" required placeholder="e.g. Budi CS 1" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Nama yang tampil ke pelanggan</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Username Login <span class="text-rose-500">*</span></label>
+            <input type="text" id="userFormUsername" required placeholder="e.g. budi_cs" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Digunakan saat login</p>
+          </div>
+        </div>
+
+        <!-- Email & Role -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email <span class="text-rose-500">*</span></label>
+            <input type="email" id="userFormEmail" required placeholder="e.g. budi@company.com" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Peran Akun (Role) <span class="text-rose-500">*</span></label>
+            <select id="userFormRole" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="AGENT">AGENT (Staf CS)</option>
+              <option value="SUPERVISOR">SUPERVISOR (Pengawas & Monitoring)</option>
+              <option value="ADMIN">ADMIN (Akses Penuh Administrator)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+            <span id="userFormPasswordLabel">Password Akun</span>
+            <span id="userFormPasswordRequired" class="text-rose-500">*</span>
+          </label>
+          <input type="password" id="userFormPassword" placeholder="Minimal 6 karakter" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <p id="userFormPasswordHelp" class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Password wajib diisi untuk pengguna baru.</p>
+        </div>
+
+        <!-- Activation Checkbox -->
+        <div class="p-3 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Status Aktivasi Akun</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Akun aktif diizinkan untuk login dan menerima tiket obrolan.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="userFormIsActive" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeUserModal()" class="px-4 py-2.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Batal
+          </button>
+          <button type="submit" id="btnSaveUserSubmit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Simpan Pengguna</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- ROLE ADD / EDIT MODAL (DYNAMIC GRANULAR RBAC) -->
+  <!-- ============================================== -->
+  <div id="roleModal" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 id="roleModalTitle" class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+          <span>Tambah Role & Hak Akses Baru</span>
+        </h3>
+        <button onclick="closeRoleModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="roleForm" onsubmit="handleSaveRole(event)" class="space-y-4">
+        <input type="hidden" id="roleFormId" value="">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+              Kode Role <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="roleFormCode" placeholder="contoh: CS_FINANCE, TECH_SUPPORT" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Huruf kapital & underscore otomatis.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+              Nama Role <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="roleFormName" placeholder="contoh: Staf Billing & Keuangan" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Deskripsi Singkat</label>
+          <input type="text" id="roleFormDesc" placeholder="contoh: Mengurus konfirmasi transfer pembayaran dan penagihan" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <!-- Permissions Checklist -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Daftar Izin & Hak Akses Granular <span class="text-rose-500">*</span>
+            </label>
+            <div class="flex gap-2">
+              <button type="button" onclick="toggleAllRolePermissions(true)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Pilih Semua</button>
+              <span class="text-slate-300 dark:text-slate-700">|</span>
+              <button type="button" onclick="toggleAllRolePermissions(false)" class="text-[11px] font-bold text-slate-500 hover:underline">Hapus Semua</button>
+            </div>
+          </div>
+
+          <div id="rolePermissionsContainer" class="space-y-4 max-h-72 overflow-y-auto pr-1">
+            <!-- Dynamically populated permissions grouped by category -->
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeRoleModal()" class="px-4 py-2.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Batal
+          </button>
+          <button type="submit" id="btnSaveRoleSubmit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Simpan Role</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- WORKSPACE ADD / EDIT MODAL                     -->
+  <!-- ============================================== -->
+  <div id="workspaceModal" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 id="workspaceModalTitle" class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+          <i data-lucide="briefcase" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+          <span>Tambah Workspace Baru</span>
+        </h3>
+        <button onclick="closeWorkspaceModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="workspaceForm" onsubmit="handleSaveWorkspace(event)" class="space-y-4">
+        <input type="hidden" id="wsFormId" value="">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+              Kode Workspace <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="wsFormCode" placeholder="contoh: BILLING, TECH_SUPPORT" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+              Nama Workspace <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="wsFormName" placeholder="contoh: Billing & Tagihan Pelanggan" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Deskripsi Departemen</label>
+          <input type="text" id="wsFormDesc" placeholder="contoh: Menangani kendala invoice, pembayaran, dan tagihan berkala" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <!-- Color & Icon Picker -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Warna Identitas</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="wsFormColor" value="#4F46E5" class="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 dark:border-slate-600">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button type="button" onclick="setWsColor('#4F46E5')" class="w-5 h-5 rounded-md bg-[#4F46E5]"></button>
+                <button type="button" onclick="setWsColor('#10B981')" class="w-5 h-5 rounded-md bg-[#10B981]"></button>
+                <button type="button" onclick="setWsColor('#F59E0B')" class="w-5 h-5 rounded-md bg-[#F59E0B]"></button>
+                <button type="button" onclick="setWsColor('#EF4444')" class="w-5 h-5 rounded-md bg-[#EF4444]"></button>
+                <button type="button" onclick="setWsColor('#8B5CF6')" class="w-5 h-5 rounded-md bg-[#8B5CF6]"></button>
+                <button type="button" onclick="setWsColor('#06B6D4')" class="w-5 h-5 rounded-md bg-[#06B6D4]"></button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">Ikon Departemen</label>
+            <select id="wsFormIcon" class="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+              <option value="briefcase">💼 Briefcase (Umum)</option>
+              <option value="receipt">🧾 Receipt (Billing/Tagihan)</option>
+              <option value="headphones">🎧 Headphones (Customer Support)</option>
+              <option value="wrench">🔧 Wrench (Technical/Teknis)</option>
+              <option value="alert-circle">⚠️ Alert (Pengaduan/Komplain)</option>
+              <option value="heart-handshake">🤝 Handshake (Partnership)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Penugasan Anggota Staf CS -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            Penugasan Staf CS (Multi-to-Multi)
+          </label>
+          <div id="wsMembersCheckboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 max-h-44 overflow-y-auto">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Pemetaan Saluran WhatsApp/Telegram -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            Saluran Inbound Terhubung (WhatsApp / Telegram)
+          </label>
+          <div id="wsChannelsCheckboxes" class="space-y-1.5 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 max-h-36 overflow-y-auto">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeWorkspaceModal()" class="px-4 py-2.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Batal
+          </button>
+          <button type="submit" id="btnSaveWsSubmit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Simpan Workspace</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- NEW WHATSAPP CHANNEL MODAL                     -->
+  <!-- ============================================== -->
+  <div id="newWaModal" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 animate-fade-in">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i>
+          <span>Hubungkan Nomor WhatsApp Baru</span>
+        </h3>
+        <button onclick="closeNewWaModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="newWaForm" onsubmit="handleCreateNewWaChannel(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+            Nama Saluran / Identitas <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="newWaIdentifier" placeholder="contoh: WA CS Tagihan & Billing" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+            Petakan Otomatis ke Workspace:
+          </label>
+          <select id="newWaWorkspaceSelect" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+            <!-- Populated dynamically -->
+          </select>
+          <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Pesan dari nomor ini akan otomatis masuk ke antrean tiket Workspace yang dipilih.</p>
+        </div>
+
+        <button type="submit" id="btnCreateWaSubmit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5">
+          <i data-lucide="qr-code" class="w-4 h-4"></i>
+          <span>Daftarkan Saluran WhatsApp</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hidden Quick Avatar File Picker for Table rows -->
+  <input type="file" id="userTableAvatarFileInput" accept="image/*" class="hidden" onchange="handleTableAvatarPicked(event)">
+
+  <!-- ============================================== -->
+  <!-- 4. CHAT SIMULATOR MODAL (TESTING)              -->
+  <!-- ============================================== -->
+  <div id="simModal" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 animate-fade-in">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+          <i data-lucide="smartphone" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+          <span>Simulasi Chat Pelanggan Luar</span>
+        </h3>
+        <button onclick="closeSimulatorModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Kirim pesan seolah-olah Anda adalah pelanggan luar yang mengirim pesan ke akun resmi:</p>
+
+      <form onsubmit="handleSendSimulation(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Channel Asal</label>
+          <select id="simChannel" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+            <option value="WHATSAPP">WhatsApp (+6281234567890)</option>
+            <option value="TELEGRAM">Telegram (@CustomerUser)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pelanggan</label>
+          <input type="text" id="simCustomerName" value="Ahmad Kurniawan" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nomor HP / ID User</label>
+          <input type="text" id="simSenderId" value="6281987654321" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Tipe Pesan</label>
+          <select id="simMessageType" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100" onchange="toggleSimMediaOptions(this.value)">
+            <option value="TEXT">Pesan Teks Biasa</option>
+            <option value="IMAGE">Pesan Gambar (Foto / Bukti Transfer)</option>
+            <option value="DOCUMENT">Pesan Dokumen (PDF Faktur / Slip)</option>
+          </select>
+        </div>
+        <div id="simMediaUrlGroup" class="hidden">
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">URL Media (Opsional)</label>
+          <input type="text" id="simMediaUrl" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100" placeholder="https://... atau biarkan default">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Isi Pesan / Caption Pelanggan</label>
+          <textarea id="simContent" rows="3" required class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100" placeholder="e.g. Halo CS, ini bukti pembayaran tagihan saya"></textarea>
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Kirim Chat Pelanggan ke Antrean</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- 5. TOAST NOTIFICATION CONTAINER (TOP RIGHT)   -->
+  <!-- ============================================== -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- ============================================== -->
+  <!-- 6. CUSTOM IN-APP MODAL (PROMPT & CONFIRM)     -->
+  <!-- ============================================== -->
+  <div id="customModalDialog" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 animate-fade-in space-y-4">
+      <div class="flex items-start gap-3.5">
+        <div id="modalIconHolder" class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-400">
+          <i data-lucide="help-circle" class="w-5 h-5" id="modalIcon"></i>
+        </div>
+        <div>
+          <h3 id="modalTitle" class="font-bold text-slate-900 dark:text-white text-sm leading-tight">Konfirmasi Tindakan</h3>
+          <p id="modalDescription" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Deskripsi tindakan</p>
+        </div>
+      </div>
+
+      <!-- Input container (for prompt) -->
+      <div id="modalInputContainer" class="hidden">
+        <input type="text" id="modalInputField" class="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="">
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button type="button" id="modalBtnCancel" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          Batal
+        </button>
+        <button type="button" id="modalBtnConfirm" class="px-5 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs">
+          Konfirmasi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- 7. IMAGE LIGHTBOX MODAL (ZOOM & FULLSCREEN)   -->
+  <!-- ============================================== -->
+  <div id="imageLightboxModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 hidden" onclick="closeImageLightbox()">
+    <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center animate-fade-in" onclick="event.stopPropagation()">
+      <div class="absolute -top-12 right-0 flex items-center gap-2">
+        <a id="lightboxDownloadBtn" href="#" target="_blank" download class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 backdrop-blur-sm transition">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Unduh Gambar</span>
+        </a>
+        <button type="button" onclick="closeImageLightbox()" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition" title="Tutup">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <img id="lightboxImage" src="" alt="Pratinjau Gambar" class="max-w-full max-h-[80vh] rounded-2xl shadow-2xl object-contain border border-white/10">
+      <p id="lightboxCaption" class="text-xs text-white/90 mt-3 text-center font-medium max-w-xl truncate"></p>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- 8. THEME & PALETTE SETTINGS MODAL              -->
+  <!-- ============================================== -->
+  <div id="themeModal" class="fixed inset-0 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target === this) closeThemeModal()">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full overflow-hidden animate-fade-in p-6" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
+            <i data-lucide="palette" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">Pilihan Tema & Palet Tampilan</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Pilih mode tampilan dan skema warna aksen OmniDesk</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeThemeModal()" class="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="py-5 space-y-6">
+        <!-- Section 1: Mode Tampilan (Light / Dark / System) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5">1. Mode Tampilan</label>
+          <div class="grid grid-cols-3 gap-2.5">
+            <!-- Light -->
+            <button type="button" onclick="setThemeMode('light')" id="themeModeBtn_light" class="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition text-center cursor-pointer">
+              <i data-lucide="sun" class="w-5 h-5"></i>
+              <span class="text-xs font-bold">Terang</span>
+            </button>
+            <!-- Dark -->
+            <button type="button" onclick="setThemeMode('dark')" id="themeModeBtn_dark" class="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition text-center cursor-pointer">
+              <i data-lucide="moon" class="w-5 h-5"></i>
+              <span class="text-xs font-bold">Gelap</span>
+            </button>
+            <!-- System -->
+            <button type="button" onclick="setThemeMode('system')" id="themeModeBtn_system" class="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border-2 transition text-center cursor-pointer">
+              <i data-lucide="monitor" class="w-5 h-5"></i>
+              <span class="text-xs font-bold">Ikuti Sistem</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 2: Skema Warna Aksen (Color Palette) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5">2. Skema Warna Aksen</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <!-- 1. Indigo Classic -->
+            <button type="button" onclick="setColorTheme('indigo')" id="colorThemeBtn_indigo" class="group flex flex-col p-3 rounded-2xl border-2 text-left transition cursor-pointer relative overflow-hidden">
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="w-4 h-4 rounded-full bg-[#4F46E5] ring-2 ring-white/50 shadow-xs"></span>
+                <span class="w-3 h-3 rounded-full bg-[#F59E0B]"></span>
+              </div>
+              <span class="text-xs font-bold text-slate-900 dark:text-white">Indigo Classic</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">Modern & Seimbang</span>
+            </button>
+
+            <!-- 2. Emerald Mint -->
+            <button type="button" onclick="setColorTheme('emerald')" id="colorThemeBtn_emerald" class="group flex flex-col p-3 rounded-2xl border-2 text-left transition cursor-pointer relative overflow-hidden">
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="w-4 h-4 rounded-full bg-[#059669] ring-2 ring-white/50 shadow-xs"></span>
+                <span class="w-3 h-3 rounded-full bg-[#06B6D4]"></span>
+              </div>
+              <span class="text-xs font-bold text-slate-900 dark:text-white">Emerald Mint</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">Segar Ala WhatsApp</span>
+            </button>
+
+            <!-- 3. Ocean Azure -->
+            <button type="button" onclick="setColorTheme('sky')" id="colorThemeBtn_sky" class="group flex flex-col p-3 rounded-2xl border-2 text-left transition cursor-pointer relative overflow-hidden">
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="w-4 h-4 rounded-full bg-[#0284C7] ring-2 ring-white/50 shadow-xs"></span>
+                <span class="w-3 h-3 rounded-full bg-[#38BDF8]"></span>
+              </div>
+              <span class="text-xs font-bold text-slate-900 dark:text-white">Ocean Azure</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">Korporat Terpercaya</span>
+            </button>
+
+            <!-- 4. Royal Violet -->
+            <button type="button" onclick="setColorTheme('violet')" id="colorThemeBtn_violet" class="group flex flex-col p-3 rounded-2xl border-2 text-left transition cursor-pointer relative overflow-hidden">
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="w-4 h-4 rounded-full bg-[#7C3AED] ring-2 ring-white/50 shadow-xs"></span>
+                <span class="w-3 h-3 rounded-full bg-[#F43F5E]"></span>
+              </div>
+              <span class="text-xs font-bold text-slate-900 dark:text-white">Royal Violet</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">Elegan & Kreatif</span>
+            </button>
+
+            <!-- 5. Sunset Amber -->
+            <button type="button" onclick="setColorTheme('amber')" id="colorThemeBtn_amber" class="group flex flex-col p-3 rounded-2xl border-2 text-left transition cursor-pointer relative overflow-hidden">
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="w-4 h-4 rounded-full bg-[#D97706] ring-2 ring-white/50 shadow-xs"></span>
+                <span class="w-3 h-3 rounded-full bg-[#E11D48]"></span>
+              </div>
+              <span class="text-xs font-bold text-slate-900 dark:text-white">Sunset Amber</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">Hangat & Energik</span>
+            </button>
+
+            <!-- 6. Slate Minimal -->
+            <button type="button" onclick="setColorTheme('slate')" id="colorThemeBtn_slate" class="group flex flex-col p-3 rounded-2xl border-2 text-left transition cursor-pointer relative overflow-hidden">
+              <div class="flex items-center gap-1.5 mb-2">
+                <span class="w-4 h-4 rounded-full bg-[#475569] ring-2 ring-white/50 shadow-xs"></span>
+                <span class="w-3 h-3 rounded-full bg-[#94A3B8]"></span>
+              </div>
+              <span class="text-xs font-bold text-slate-900 dark:text-white">Slate Minimal</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">Monokrom Bersih</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 3: Live Preview Demo -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <button type="button" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-xs">
+              Tombol Primer
+            </button>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              Badge Aktif
+            </span>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 shadow-2xs">
+            Aksen
+          </span>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+        <span class="text-[11px] text-slate-400 font-medium">Preferensi otomatis tersimpan</span>
+        <button type="button" onclick="closeThemeModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs cursor-pointer">
+          Selesai
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript App Logic -->
+  <script src="/app.js"></script>
+</body>
+</html>
